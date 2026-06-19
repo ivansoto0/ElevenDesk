@@ -147,7 +147,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "elevenlabs" },
-    { name = "soundobj", git = "https://github.com/cartertemm/soundobj?rev=6cd40d10173cfa1d1c0e05fbc2f8ed098cfada9a" },
+    { name = "soundobj", git = "https://github.com/trypsynth/soundobj?branch=fix%2Fmacos-vcpkg-triplet" },
     { name = "wxpython" },
 ]
 
@@ -312,7 +312,7 @@ wheels = [
 [[package]]
 name = "soundobj"
 version = "0.2.0"
-source = { git = "https://github.com/cartertemm/soundobj?rev=6cd40d10173cfa1d1c0e05fbc2f8ed098cfada9a#6cd40d10173cfa1d1c0e05fbc2f8ed098cfada9a" }
+source = { git = "https://github.com/trypsynth/soundobj?branch=fix%2Fmacos-vcpkg-triplet#bc0c85755f7be59d0a331ff7df3191ce76f110dd" }
 dependencies = [
     { name = "cffi" },
 ]

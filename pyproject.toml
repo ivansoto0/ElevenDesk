@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-soundobj = { git = "https://github.com/cartertemm/soundobj", rev = "6cd40d10173cfa1d1c0e05fbc2f8ed098cfada9a" }
+soundobj = { git = "https://github.com/trypsynth/soundobj", branch = "fix/macos-vcpkg-triplet" }
 
 [tool.ruff]
 target-version = "py313"
