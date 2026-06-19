@@ -2,7 +2,7 @@ import os
 import threading
 
 import wx
-from sound_lib.main import BassError
+import soundobj
 
 from elevendesk import api
 from elevendesk import constants
@@ -122,7 +122,7 @@ class CloneVoiceDialog(wx.Dialog):
 				continue
 			try:
 				metadata = playback.get_audio_file_metadata(file_path)
-			except (BassError, OSError, RuntimeError, ValueError):
+			except (soundobj.MiniAudioError, OSError, RuntimeError, ValueError):
 				skipped_count += constants.INDEX_STEP
 				continue
 			metadata[constants.KEY_FILE_PATH] = normalized_path

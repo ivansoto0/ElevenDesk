@@ -12,12 +12,12 @@ This project is an independent client and is not affiliated with or endorsed by 
 
 ## Requirements
 
-- Python 3.10 through 3.12
+- Python 3.13 or 3.14
 - An ElevenLabs API key
 - Windows or macOS
 - A working audio-output device
 
-Python 3.12 is recommended. The application currently uses Python's `audioop` module for u-law playback, which is not included in Python 3.13 and later.
+ElevenDesk uses `soundobj` for cross-platform audio playback. The locked `soundobj 0.2.0` revision requires Python 3.13 or later.
 
 ## Installation
 
@@ -25,37 +25,22 @@ Clone the repository and enter its directory:
 
 ```shell
 git clone <repository-url>
-cd elevenClient
+cd ElevenDesk
 ```
 
-Create and activate a virtual environment.
-
-Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-macOS:
+Install the dependencies with [uv](https://docs.astral.sh/uv/):
 
 ```shell
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Install the dependencies:
-
-```shell
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+uv sync
 ```
 
 Run ElevenDesk:
 
 ```shell
-python -m elevendesk
+uv run python -m elevendesk
 ```
+
+`uv.lock` pins `soundobj 0.2.0` to its Git revision because that release is sourced directly from the soundobj repository.
 
 On first launch, ElevenDesk opens Preferences so you can enter your ElevenLabs API key and choose an output directory.
 

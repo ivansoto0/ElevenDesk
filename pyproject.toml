@@ -1,0 +1,17 @@
+[project]
+name = "elevendesk"
+version = "1.0.0"
+description = "An accessible wxPython desktop client for the ElevenLabs API."
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+	"elevenlabs",
+	"soundobj",
+	"wxpython",
+]
+
+[tool.uv.sources]
+soundobj = { git = "https://github.com/cartertemm/soundobj", rev = "6cd40d10173cfa1d1c0e05fbc2f8ed098cfada9a" }
+
+[tool.ruff]
+target-version = "py313"

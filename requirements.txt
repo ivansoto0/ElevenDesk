@@ -1,3 +1,0 @@
-elevenlabs
-sound_lib
-wxPython
