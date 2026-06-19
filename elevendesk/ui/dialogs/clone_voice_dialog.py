@@ -138,10 +138,14 @@ class CloneVoiceDialog(wx.Dialog):
 	def _add_audio_files(self, file_paths):
 		added_count = constants.FIRST_ITEM_INDEX
 		skipped_count = constants.FIRST_ITEM_INDEX
+		limit_count = constants.FIRST_ITEM_INDEX
 		existing_paths = {item[constants.KEY_FILE_PATH] for item in self.audio_files}
 		for file_path in file_paths:
 			normalized_path = os.path.normcase(os.path.abspath(file_path))
 			if normalized_path in existing_paths:
+				continue
+			if len(self.audio_files) >= constants.CLONE_MAX_AUDIO_FILES:
+				limit_count += constants.INDEX_STEP
 				continue
 			try:
 				metadata = playback.get_audio_file_metadata(file_path)
@@ -153,9 +157,19 @@ class CloneVoiceDialog(wx.Dialog):
 			existing_paths.add(normalized_path)
 			self._append_audio_file(metadata)
 			added_count += constants.INDEX_STEP
-		self.status_text.SetLabel(
-			constants.STATUS_AUDIO_FILES_ADDED_TEMPLATE.format(added_count, skipped_count)
-		)
+		if limit_count:
+			status_message = constants.STATUS_AUDIO_FILES_LIMIT_TEMPLATE.format(
+				added_count,
+				skipped_count,
+				limit_count,
+				constants.CLONE_MAX_AUDIO_FILES,
+			)
+		else:
+			status_message = constants.STATUS_AUDIO_FILES_ADDED_TEMPLATE.format(
+				added_count,
+				skipped_count,
+			)
+		self.status_text.SetLabel(status_message)
 		self._update_clone_button()
 
 	def _append_audio_file(self, metadata):
@@ -199,7 +213,11 @@ class CloneVoiceDialog(wx.Dialog):
 		self._update_clone_button()
 
 	def _update_clone_button(self):
-		self.clone_button.Enable(bool(self.audio_files) and self.rights_checkbox.IsChecked())
+		has_valid_file_count = (
+			bool(self.audio_files)
+			and len(self.audio_files) <= constants.CLONE_MAX_AUDIO_FILES
+		)
+		self.clone_button.Enable(has_valid_file_count and self.rights_checkbox.IsChecked())
 
 	def _on_clone(self, event):
 		name = self.name_input.GetValue().strip()
@@ -208,6 +226,11 @@ class CloneVoiceDialog(wx.Dialog):
 			return
 		if not self.audio_files:
 			self.status_text.SetLabel(constants.ERROR_CLONE_FILES_REQUIRED)
+			return
+		if len(self.audio_files) > constants.CLONE_MAX_AUDIO_FILES:
+			self.status_text.SetLabel(
+				constants.ERROR_CLONE_FILE_LIMIT_TEMPLATE.format(constants.CLONE_MAX_AUDIO_FILES)
+			)
 			return
 		if not self.rights_checkbox.IsChecked():
 			self.status_text.SetLabel(constants.ERROR_VOICE_RIGHTS_REQUIRED)

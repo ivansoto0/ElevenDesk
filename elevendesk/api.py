@@ -59,8 +59,26 @@ def _join_audio_chunks(response):
 		return bytes(response)
 	try:
 		return b"".join(response)
-	except (ApiError, httpx.HTTPError, OSError, TypeError, ValueError) as error:
+	except ApiError as error:
+		raise ElevenDeskAPIError(_format_api_error(error)) from error
+	except (httpx.HTTPError, OSError, TypeError, ValueError) as error:
 		raise ElevenDeskAPIError(str(error)) from error
+
+
+def _format_api_error(error):
+	body = error.body
+	if isinstance(body, dict):
+		detail = body.get(constants.API_ERROR_DETAIL, body)
+		if isinstance(detail, dict):
+			message = detail.get(constants.API_ERROR_MESSAGE)
+			request_id = detail.get(constants.API_ERROR_REQUEST_ID)
+			if message and request_id:
+				return constants.ERROR_API_REQUEST_ID_TEMPLATE.format(message, request_id)
+			if message:
+				return message
+		if isinstance(detail, str):
+			return detail
+	return str(error)
 
 
 def _call_sdk(callable_object, keyword_arguments):
@@ -68,7 +86,9 @@ def _call_sdk(callable_object, keyword_arguments):
 		return callable_object(**keyword_arguments)
 	except (ElevenDeskAPIError, KeyboardInterrupt, SystemExit):
 		raise
-	except (ApiError, httpx.HTTPError, OSError, TypeError, ValueError, AttributeError) as error:
+	except ApiError as error:
+		raise ElevenDeskAPIError(_format_api_error(error)) from error
+	except (httpx.HTTPError, OSError, TypeError, ValueError, AttributeError) as error:
 		raise ElevenDeskAPIError(str(error)) from error
 
 
@@ -203,6 +223,10 @@ def design_voice(prompt, name):
 
 
 def clone_voice(name, description, file_paths):
+	if len(file_paths) > constants.CLONE_MAX_AUDIO_FILES:
+		raise ElevenDeskAPIError(
+			constants.ERROR_CLONE_FILE_LIMIT_TEMPLATE.format(constants.CLONE_MAX_AUDIO_FILES)
+		)
 	client = get_client()
 	opened_files = []
 	try:
