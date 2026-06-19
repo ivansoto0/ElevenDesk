@@ -1,3 +1,4 @@
+import atexit
 import gc
 import os
 import struct
@@ -14,6 +15,7 @@ from elevendesk import constants
 _playback_lock = threading.RLock()
 _current_sound = None
 _current_temp_path = None
+_managed_temp_paths = set()
 
 
 def _close_sound(sound):
@@ -29,8 +31,10 @@ def _remove_temp_file(file_path):
 		return
 	try:
 		os.remove(file_path)
-	except FileNotFoundError:
+	except (FileNotFoundError, PermissionError):
 		pass
+	else:
+		_managed_temp_paths.discard(file_path)
 
 
 def stop_audio():
@@ -44,7 +48,14 @@ def stop_audio():
 		if sound is not None:
 			sound.stop()
 			_close_sound(sound)
-		_remove_temp_file(temp_path)
+		gc.collect()
+	_remove_temp_file(temp_path)
+
+
+def cleanup():
+	stop_audio()
+	for file_path in tuple(_managed_temp_paths):
+		_remove_temp_file(file_path)
 
 
 def _ulaw_sample_to_pcm(sample):
@@ -86,6 +97,7 @@ def _create_temp_audio_file(audio_bytes, output_format):
 		suffix=file_suffix,
 	)
 	os.close(file_descriptor)
+	_managed_temp_paths.add(file_path)
 	try:
 		if output_format.startswith(constants.OUTPUT_MP3_PREFIX):
 			with open(file_path, constants.FILE_MODE_BINARY_WRITE) as audio_file:
@@ -157,3 +169,6 @@ def play_audio(audio_bytes, output_format):
 	playback_thread = threading.Thread(target=playback_worker, daemon=constants.THREAD_DAEMON)
 	playback_thread.start()
 	return playback_thread
+
+
+atexit.register(cleanup)

@@ -2,6 +2,7 @@ import wx
 
 from elevendesk import config
 from elevendesk import constants
+from elevendesk import playback
 from elevendesk.ui.dialogs.clone_voice_dialog import CloneVoiceDialog
 from elevendesk.ui.dialogs.history_dialog import HistoryDialog
 from elevendesk.ui.dialogs.pronunciation_dialog import PronunciationDialog
@@ -165,4 +166,5 @@ class MainFrame(wx.Frame):
 		for dialog in list(self.non_modal_dialogs):
 			dialog.Destroy()
 		self.non_modal_dialogs = []
+		playback.cleanup()
 		event.Skip()
