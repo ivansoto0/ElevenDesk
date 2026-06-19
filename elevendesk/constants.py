@@ -32,6 +32,8 @@ KEY_DEFAULT_MODEL = "default_model"
 KEY_DEFAULT_VOICE_ID = "default_voice_id"
 KEY_DEFAULT_OUTPUT_FORMAT = "default_output_format"
 KEY_OUTPUT_DIRECTORY = "output_directory"
+KEY_OUTPUT_DEVICE = "output_device"
+KEY_INPUT_DEVICE = "input_device"
 KEY_ID = "id"
 KEY_VOICE_ID = "voice_id"
 KEY_NAME = "name"
@@ -126,6 +128,9 @@ LABEL_DEFAULT_MODEL = "Default Model"
 LABEL_DEFAULT_VOICE_ID = "Default Voice ID"
 LABEL_DEFAULT_OUTPUT_FORMAT = "Default Output Format"
 LABEL_OUTPUT_DIRECTORY = "Output Directory"
+LABEL_OUTPUT_DEVICE = "Output Device"
+LABEL_INPUT_DEVICE = "Input Device"
+LABEL_DEFAULT_DEVICE = "(Default)"
 LABEL_BROWSE = "Browse"
 LABEL_CANCEL = "Cancel"
 LABEL_CLOSE = "Close"
@@ -142,6 +147,7 @@ MENU_VOICE_LIBRARY = "Voice Library..."
 MENU_CLONE_VOICE = "Clone Voice..."
 MENU_HISTORY = "Generation History..."
 MENU_PRONUNCIATION = "Pronunciation Dictionaries..."
+MENU_AUDIO_DEVICES = "Audio Devices..."
 MENU_PREFERENCES = "Preferences..."
 MENU_ABOUT = "About"
 
@@ -149,6 +155,7 @@ TITLE_VOICE_LIBRARY = "Voice Library"
 TITLE_CLONE_VOICE = "Clone Voice"
 TITLE_HISTORY = "Generation History"
 TITLE_PRONUNCIATION = "Pronunciation Dictionaries"
+TITLE_AUDIO_DEVICES = "Audio Devices"
 TITLE_PREFERENCES = "Preferences"
 TITLE_ABOUT = "About ElevenDesk"
 TITLE_ERROR = "ElevenDesk Error"
@@ -343,6 +350,8 @@ DEFAULT_SETTINGS = {
 	KEY_DEFAULT_VOICE_ID: DEFAULT_VOICE_ID,
 	KEY_DEFAULT_OUTPUT_FORMAT: DEFAULT_OUTPUT_FORMAT,
 	KEY_OUTPUT_DIRECTORY: EMPTY_TEXT,
+	KEY_OUTPUT_DEVICE: EMPTY_TEXT,
+	KEY_INPUT_DEVICE: EMPTY_TEXT,
 }
 
 FRAME_SIZE = (900, 720)
@@ -405,11 +414,6 @@ FORMAT_MP3 = "mp3"
 FORMAT_WAV = "wav"
 OUTPUT_MP3_PREFIX = "mp3_"
 PLAYBACK_POLL_SECONDS = 0.05
-TEMP_AUDIO_PREFIX = "elevendesk_"
-SOUNDOBJ_ATTR_LOADED = "_loaded"
-SOUNDOBJ_FORMAT_POINTER = "ma_format*"
-SOUNDOBJ_UINT_POINTER = "unsigned int*"
-SOUNDOBJ_CHANNEL_MAP_CAPACITY = 0
 ULAW_BYTE_MASK = 255
 ULAW_SIGN_BIT = 128
 ULAW_EXPONENT_SHIFT = 4

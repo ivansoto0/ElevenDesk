@@ -3,6 +3,7 @@ import wx
 from elevendesk import config
 from elevendesk import constants
 from elevendesk import playback
+from elevendesk.ui.dialogs.audio_devices_dialog import AudioDevicesDialog
 from elevendesk.ui.dialogs.clone_voice_dialog import CloneVoiceDialog
 from elevendesk.ui.dialogs.history_dialog import HistoryDialog
 from elevendesk.ui.dialogs.pronunciation_dialog import PronunciationDialog
@@ -53,6 +54,7 @@ class MainFrame(wx.Frame):
 		self.clone_voice_item = tools_menu.Append(wx.ID_ANY, constants.MENU_CLONE_VOICE)
 		self.history_item = tools_menu.Append(wx.ID_ANY, constants.MENU_HISTORY)
 		self.pronunciation_item = tools_menu.Append(wx.ID_ANY, constants.MENU_PRONUNCIATION)
+		self.audio_devices_item = tools_menu.Append(wx.ID_ANY, constants.MENU_AUDIO_DEVICES)
 		settings_menu = wx.Menu()
 		self.preferences_item = settings_menu.Append(wx.ID_PREFERENCES, constants.MENU_PREFERENCES)
 		help_menu = wx.Menu()
@@ -69,6 +71,7 @@ class MainFrame(wx.Frame):
 		self.Bind(wx.EVT_MENU, self._on_clone_voice, self.clone_voice_item)
 		self.Bind(wx.EVT_MENU, self._on_history, self.history_item)
 		self.Bind(wx.EVT_MENU, self._on_pronunciation, self.pronunciation_item)
+		self.Bind(wx.EVT_MENU, self._on_audio_devices, self.audio_devices_item)
 		self.Bind(wx.EVT_MENU, self._on_preferences, self.preferences_item)
 		self.Bind(wx.EVT_MENU, self._on_about, self.about_item)
 
@@ -113,6 +116,11 @@ class MainFrame(wx.Frame):
 
 	def _on_pronunciation(self, event):
 		self._show_non_modal_dialog(PronunciationDialog(self))
+
+	def _on_audio_devices(self, event):
+		dialog = AudioDevicesDialog(self)
+		dialog.ShowModal()
+		dialog.Destroy()
 
 	def _on_preferences(self, event):
 		dialog = SettingsDialog(self)

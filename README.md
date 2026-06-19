@@ -1,34 +1,21 @@
 # ElevenDesk
 
-ElevenDesk is an accessible desktop client for the ElevenLabs API. It provides text-to-speech, speech-to-text, sound-effect generation, voice design, voice cloning, history, and voice-library tools in a native wxPython interface.
+A desktop client for the ElevenLabs API. Not affiliated with or endorsed by ElevenLabs.
 
 ## Why this project exists
 
-I created ElevenDesk because the accessibility of the ElevenLabs website seems to be degrading. Tasks that should be direct and predictable with a keyboard and screen reader have become harder to complete reliably.
-
-ElevenDesk provides a focused desktop alternative where controls have meaningful names, keyboard navigation follows a deliberate order, status changes are communicated as text, and common actions do not require navigating a changing web interface.
-
-This project is an independent client and is not affiliated with or endorsed by ElevenLabs.
+I created ElevenDesk because the accessibility of the ElevenLabs website has been degrading. Tasks that should be straightforward with a keyboard and screen reader have become harder to complete reliably.
 
 ## Requirements
 
 - Python 3.13 or 3.14
 - An ElevenLabs API key
 - Windows or macOS
-- A working audio-output device
-
-ElevenDesk uses `soundobj` for cross-platform audio playback. The locked `soundobj 0.2.0` revision requires Python 3.13 or later.
+- A working audio output device
 
 ## Installation
 
-Clone the repository and enter its directory:
-
-```shell
-git clone <repository-url>
-cd ElevenDesk
-```
-
-Install the dependencies with [uv](https://docs.astral.sh/uv/):
+Install dependencies with [uv](https://docs.astral.sh/uv/):
 
 ```shell
 uv sync
@@ -40,47 +27,29 @@ Run ElevenDesk:
 uv run python -m elevendesk
 ```
 
-`uv.lock` pins `soundobj 0.2.0` to its Git revision because that release is sourced directly from the soundobj repository.
+On first launch, ElevenDesk opens Preferences so you can enter your API key and choose an output directory.
 
-On first launch, ElevenDesk opens Preferences so you can enter your ElevenLabs API key and choose an output directory.
+## API key storage
 
-## API-key storage
+The API key is saved to ElevenDesk's per-user settings file outside the repository:
 
-The API key is saved only in ElevenDesk's per-user settings file outside the repository:
+- Windows: `%APPDATA%\ElevenDesk\settings.json`
+- macOS: standard per-user application data directory
 
-- Windows: the ElevenDesk directory under `%APPDATA%`
-- macOS: the standard per-user application-data directory selected by wxPython
+## Keyboard shortcuts
 
-Do not add settings files, environment files, credentials, generated audio, or transcripts to the repository. The included `.gitignore` uses an allowlist and admits only project source and documentation.
+- `Ctrl+Enter` — generate and play speech (Text to Speech tab)
+- `Ctrl+S` — save last output
+- `Ctrl+O` — open audio file for transcription
 
-## Keyboard and accessibility behavior
+## Features
 
-- The Text to Speech editor receives focus at startup.
-- Press `Ctrl+Enter` to generate and automatically play speech.
-- All selection controls use read-only combo boxes.
-- Voice settings expose labels and current values to screen readers.
-- Controls have explicit accessible names and logical tab order.
-- Status and error information is communicated with text.
-
-## Main features
-
-- Text to speech with voice, model, output-format, and voice-setting controls
-- Automatic playback after speech generation
-- Speech-to-text transcription
-- Sound-effect generation
+- Text to speech with voice, model, output format, and voice setting controls
+- Speech to text transcription
+- Sound effect generation
 - Voice design and cloning
-- Recursive audio-directory import with file metadata
-- Voice library and generation history
-- Friendly local history dates
-- Pronunciation-dictionary listing
+- Voice library browser
+- Generation history with playback and download
+- Pronunciation dictionary listing
+- Recursive audio directory import for voice cloning
 
-## Sensitive-data policy
-
-Before committing changes, verify the staged files:
-
-```shell
-git status --short
-git diff --cached
-```
-
-Never commit API keys, settings files, `.env` files, credentials, audio output, transcripts, virtual environments, caches, or compiled Python files.

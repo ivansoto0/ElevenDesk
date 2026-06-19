@@ -6,6 +6,7 @@ from elevendesk import api
 from elevendesk import config
 from elevendesk import constants
 from elevendesk import playback
+from elevendesk.ui import choices
 
 
 class TextToSpeechPanel(wx.Panel):
@@ -23,21 +24,11 @@ class TextToSpeechPanel(wx.Panel):
 
 	def _create_controls(self):
 		self.voice_label = wx.StaticText(self, label=constants.LABEL_VOICE)
-		self.voice_combo = wx.ComboBox(self, style=wx.CB_READONLY, name=constants.LABEL_VOICE)
+		self.voice_combo = choices.create_choice(self, name=constants.LABEL_VOICE)
 		self.model_label = wx.StaticText(self, label=constants.LABEL_MODEL)
-		self.model_combo = wx.ComboBox(
-			self,
-			choices=list(constants.MODEL_IDS),
-			style=wx.CB_READONLY,
-			name=constants.LABEL_MODEL,
-		)
+		self.model_combo = choices.create_choice(self, choices=list(constants.MODEL_IDS), name=constants.LABEL_MODEL)
 		self.output_format_label = wx.StaticText(self, label=constants.LABEL_OUTPUT_FORMAT)
-		self.output_format_combo = wx.ComboBox(
-			self,
-			choices=list(constants.OUTPUT_FORMATS),
-			style=wx.CB_READONLY,
-			name=constants.LABEL_OUTPUT_FORMAT,
-		)
+		self.output_format_combo = choices.create_choice(self, choices=list(constants.OUTPUT_FORMATS), name=constants.LABEL_OUTPUT_FORMAT)
 		self.text_label = wx.StaticText(self, label=constants.LABEL_TEXT)
 		self.text_input = wx.TextCtrl(self, style=wx.TE_MULTILINE, name=constants.LABEL_TEXT)
 		self.text_input.SetMinSize((constants.DEFAULT_SIZE_WIDTH, constants.TEXT_MIN_HEIGHT))

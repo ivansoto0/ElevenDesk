@@ -5,6 +5,7 @@ import wx
 from elevendesk import api
 from elevendesk import config
 from elevendesk import constants
+from elevendesk.ui import choices
 
 
 class SettingsDialog(wx.Dialog):
@@ -21,21 +22,11 @@ class SettingsDialog(wx.Dialog):
 		self.api_key_label = wx.StaticText(self, label=constants.LABEL_API_KEY)
 		self.api_key_input = wx.TextCtrl(self, style=wx.TE_PASSWORD, name=constants.LABEL_API_KEY)
 		self.model_label = wx.StaticText(self, label=constants.LABEL_DEFAULT_MODEL)
-		self.model_combo = wx.ComboBox(
-			self,
-			choices=list(constants.MODEL_IDS),
-			style=wx.CB_READONLY,
-			name=constants.LABEL_DEFAULT_MODEL,
-		)
+		self.model_combo = choices.create_choice(self, choices=list(constants.MODEL_IDS), name=constants.LABEL_DEFAULT_MODEL)
 		self.voice_id_label = wx.StaticText(self, label=constants.LABEL_DEFAULT_VOICE_ID)
 		self.voice_id_input = wx.TextCtrl(self, name=constants.LABEL_DEFAULT_VOICE_ID)
 		self.format_label = wx.StaticText(self, label=constants.LABEL_DEFAULT_OUTPUT_FORMAT)
-		self.format_combo = wx.ComboBox(
-			self,
-			choices=list(constants.OUTPUT_FORMATS),
-			style=wx.CB_READONLY,
-			name=constants.LABEL_DEFAULT_OUTPUT_FORMAT,
-		)
+		self.format_combo = choices.create_choice(self, choices=list(constants.OUTPUT_FORMATS), name=constants.LABEL_DEFAULT_OUTPUT_FORMAT)
 		self.output_directory_label = wx.StaticText(self, label=constants.LABEL_OUTPUT_DIRECTORY)
 		self.output_directory_input = wx.TextCtrl(self, name=constants.LABEL_OUTPUT_DIRECTORY)
 		self.browse_label = wx.StaticText(self, label=constants.LABEL_BROWSE)
