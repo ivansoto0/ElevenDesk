@@ -13,6 +13,7 @@ class CloneVoiceDialog(wx.Dialog):
 	def __init__(self, parent):
 		wx.Dialog.__init__(self, parent, title=constants.TITLE_CLONE_VOICE, size=constants.DIALOG_SIZE)
 		self.audio_files = []
+		self.is_cloning = False
 		self.name_label = wx.StaticText(self, label=constants.LABEL_VOICE_NAME)
 		self.name_input = wx.TextCtrl(self, name=constants.LABEL_VOICE_NAME)
 		self.description_label = wx.StaticText(self, label=constants.COLUMN_DESCRIPTION)
@@ -43,14 +44,32 @@ class CloneVoiceDialog(wx.Dialog):
 		)
 		self.remove_label = wx.StaticText(self, label=constants.LABEL_REMOVE_FILE)
 		self.remove_button = wx.Button(self, label=constants.LABEL_REMOVE_FILE, name=constants.LABEL_REMOVE_FILE)
+		self.rights_checkbox = wx.CheckBox(
+			self,
+			label=constants.LABEL_VOICE_RIGHTS_CONFIRMATION,
+			name=constants.LABEL_VOICE_RIGHTS_CONFIRMATION,
+		)
 		self.clone_label = wx.StaticText(self, label=constants.LABEL_CLONE)
 		self.clone_button = wx.Button(self, label=constants.LABEL_CLONE, name=constants.LABEL_CLONE)
+		self.clone_button.Disable()
+		self.progress_label = wx.StaticText(self, label=constants.LABEL_CLONE_PROGRESS)
+		self.progress_gauge = wx.Gauge(
+			self,
+			range=constants.PROGRESS_RANGE,
+			name=constants.LABEL_CLONE_PROGRESS,
+		)
+		self.progress_gauge.Hide()
+		self.progress_label.Hide()
 		self.status_text = wx.StaticText(self, label=constants.STATUS_READY, name=constants.LABEL_STATUS)
+		self.progress_timer = wx.Timer(self)
 		self._layout_controls()
 		self.add_button.Bind(wx.EVT_BUTTON, self._on_add)
 		self.add_directory_button.Bind(wx.EVT_BUTTON, self._on_add_directory)
 		self.remove_button.Bind(wx.EVT_BUTTON, self._on_remove)
+		self.rights_checkbox.Bind(wx.EVT_CHECKBOX, self._on_rights_changed)
 		self.clone_button.Bind(wx.EVT_BUTTON, self._on_clone)
+		self.Bind(wx.EVT_TIMER, self._on_progress_timer, self.progress_timer)
+		self.Bind(wx.EVT_CLOSE, self._on_close)
 		self._set_tab_order()
 
 	def _layout_controls(self):
@@ -73,6 +92,9 @@ class CloneVoiceDialog(wx.Dialog):
 			button_sizer.Add(label, constants.SIZER_PROPORTION_NONE, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, constants.CONTROL_GAP)
 			button_sizer.Add(button, constants.SIZER_PROPORTION_NONE, wx.RIGHT, constants.SECTION_GAP)
 		main_sizer.Add(button_sizer, constants.SIZER_PROPORTION_NONE, wx.BOTTOM, constants.SECTION_GAP)
+		main_sizer.Add(self.rights_checkbox, constants.SIZER_PROPORTION_NONE, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
+		main_sizer.Add(self.progress_label, constants.SIZER_PROPORTION_NONE, wx.BOTTOM, constants.CONTROL_GAP)
+		main_sizer.Add(self.progress_gauge, constants.SIZER_PROPORTION_NONE, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
 		main_sizer.Add(self.status_text, constants.SIZER_PROPORTION_NONE, wx.EXPAND)
 		self.SetSizer(main_sizer)
 
@@ -82,7 +104,8 @@ class CloneVoiceDialog(wx.Dialog):
 		self.add_button.MoveAfterInTabOrder(self.files_list)
 		self.add_directory_button.MoveAfterInTabOrder(self.add_button)
 		self.remove_button.MoveAfterInTabOrder(self.add_directory_button)
-		self.clone_button.MoveAfterInTabOrder(self.remove_button)
+		self.rights_checkbox.MoveAfterInTabOrder(self.remove_button)
+		self.clone_button.MoveAfterInTabOrder(self.rights_checkbox)
 
 	def _on_add(self, event):
 		with wx.FileDialog(
@@ -133,6 +156,7 @@ class CloneVoiceDialog(wx.Dialog):
 		self.status_text.SetLabel(
 			constants.STATUS_AUDIO_FILES_ADDED_TEMPLATE.format(added_count, skipped_count)
 		)
+		self._update_clone_button()
 
 	def _append_audio_file(self, metadata):
 		row = self.files_list.InsertItem(
@@ -169,6 +193,13 @@ class CloneVoiceDialog(wx.Dialog):
 		if selection != wx.NOT_FOUND:
 			del self.audio_files[selection]
 			self.files_list.DeleteItem(selection)
+			self._update_clone_button()
+
+	def _on_rights_changed(self, event):
+		self._update_clone_button()
+
+	def _update_clone_button(self):
+		self.clone_button.Enable(bool(self.audio_files) and self.rights_checkbox.IsChecked())
 
 	def _on_clone(self, event):
 		name = self.name_input.GetValue().strip()
@@ -178,14 +209,52 @@ class CloneVoiceDialog(wx.Dialog):
 		if not self.audio_files:
 			self.status_text.SetLabel(constants.ERROR_CLONE_FILES_REQUIRED)
 			return
+		if not self.rights_checkbox.IsChecked():
+			self.status_text.SetLabel(constants.ERROR_VOICE_RIGHTS_REQUIRED)
+			return
 		file_paths = [item[constants.KEY_FILE_PATH] for item in self.audio_files]
-		self.clone_button.Disable()
-		self.status_text.SetLabel(constants.STATUS_CLONING_VOICE)
+		self._set_cloning_state(True)
+		self.status_text.SetLabel(constants.STATUS_CLONING_FILES_TEMPLATE.format(len(file_paths)))
 		threading.Thread(
 			target=self._clone_worker,
 			args=(name, self.description_input.GetValue().strip(), file_paths),
 			daemon=constants.THREAD_DAEMON,
 		).start()
+
+	def _set_cloning_state(self, is_cloning):
+		self.is_cloning = is_cloning
+		for control in (
+			self.name_input,
+			self.description_input,
+			self.files_list,
+			self.add_button,
+			self.add_directory_button,
+			self.remove_button,
+			self.rights_checkbox,
+		):
+			control.Enable(not is_cloning)
+		if is_cloning:
+			self.clone_button.Disable()
+			self.progress_gauge.SetValue(constants.FIRST_ITEM_INDEX)
+			self.progress_label.Show()
+			self.progress_gauge.Show()
+			self.progress_timer.Start(constants.PROGRESS_PULSE_INTERVAL_MS)
+		else:
+			self.progress_timer.Stop()
+			self.progress_label.Hide()
+			self.progress_gauge.Hide()
+			self._update_clone_button()
+		self.Layout()
+
+	def _on_progress_timer(self, event):
+		self.progress_gauge.Pulse()
+
+	def _on_close(self, event):
+		if self.is_cloning:
+			self.status_text.SetLabel(constants.STATUS_CLONE_CLOSE_BLOCKED)
+			event.Veto()
+			return
+		event.Skip()
 
 	def _clone_worker(self, name, description, file_paths):
 		try:
@@ -196,7 +265,10 @@ class CloneVoiceDialog(wx.Dialog):
 		wx.CallAfter(self._clone_succeeded, voice)
 
 	def _clone_succeeded(self, voice):
-		self.clone_button.Enable()
+		self.is_cloning = False
+		self.progress_timer.Stop()
+		self.progress_gauge.SetValue(constants.PROGRESS_COMPLETE)
+		self.status_text.SetLabel(constants.STATUS_CLONE_COMPLETE)
 		wx.MessageBox(
 			constants.SUCCESS_CLONE_TEMPLATE.format(voice[constants.KEY_VOICE_ID]),
 			constants.TITLE_SUCCESS,
@@ -206,5 +278,5 @@ class CloneVoiceDialog(wx.Dialog):
 		self.EndModal(wx.ID_OK)
 
 	def _clone_failed(self, message):
-		self.clone_button.Enable()
+		self._set_cloning_state(False)
 		self.status_text.SetLabel(message)

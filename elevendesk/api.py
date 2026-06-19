@@ -208,15 +208,17 @@ def clone_voice(name, description, file_paths):
 	try:
 		for file_path in file_paths:
 			opened_files.append(open(file_path, constants.FILE_MODE_BINARY_READ))
+		voices_client = _get_sdk_section(client, constants.API_ATTR_VOICES)
+		ivc_client = getattr(voices_client, constants.API_ATTR_IVC)
 		response = _call_sdk(
-			_get_sdk_method(client, constants.API_ATTR_VOICES, constants.API_ATTR_ADD),
+			getattr(ivc_client, constants.API_ATTR_CREATE),
 			{
 				constants.API_KW_NAME: name,
 				constants.API_KW_DESCRIPTION: description,
 				constants.API_KW_FILES: opened_files,
 			},
 		)
-	except OSError as error:
+	except (AttributeError, OSError) as error:
 		raise ElevenDeskAPIError(str(error)) from error
 	finally:
 		for opened_file in opened_files:
