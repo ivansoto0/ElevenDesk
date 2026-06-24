@@ -175,6 +175,20 @@ def speech_to_text(audio_bytes, model_id):
 	return text
 
 
+def speech_to_speech(audio_bytes, voice_id, model_id, output_format):
+	client = get_client()
+	response = _call_sdk(
+		_get_sdk_method(client, constants.API_ATTR_SPEECH_TO_SPEECH, constants.API_ATTR_CONVERT),
+		{
+			constants.API_KW_AUDIO: audio_bytes,
+			constants.API_KW_VOICE_ID: voice_id,
+			constants.API_KW_MODEL_ID: model_id,
+			constants.API_KW_OUTPUT_FORMAT: output_format,
+		},
+	)
+	return _join_audio_chunks(response)
+
+
 def generate_sound_effect(prompt, duration_seconds):
 	client = get_client()
 	response = _call_sdk(

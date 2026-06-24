@@ -11,6 +11,7 @@ from elevendesk.ui.dialogs.settings_dialog import SettingsDialog
 from elevendesk.ui.dialogs.voice_library_dialog import VoiceLibraryDialog
 from elevendesk.ui.panels.sfx_panel import SoundEffectsPanel
 from elevendesk.ui.panels.stt_panel import SpeechToTextPanel
+from elevendesk.ui.panels.sts_panel import SpeechToSpeechPanel
 from elevendesk.ui.panels.tts_panel import TextToSpeechPanel
 from elevendesk.ui.panels.voice_design_panel import VoiceDesignPanel
 
@@ -23,10 +24,12 @@ class MainFrame(wx.Frame):
 		self.notebook = wx.Notebook(self, name=constants.APP_TITLE)
 		self.tts_panel = TextToSpeechPanel(self.notebook)
 		self.stt_panel = SpeechToTextPanel(self.notebook)
+		self.sts_panel = SpeechToSpeechPanel(self.notebook)
 		self.sfx_panel = SoundEffectsPanel(self.notebook)
 		self.voice_design_panel = VoiceDesignPanel(self.notebook, self.tts_panel)
 		self.notebook.AddPage(self.tts_panel, constants.TAB_TTS)
 		self.notebook.AddPage(self.stt_panel, constants.TAB_STT)
+		self.notebook.AddPage(self.sts_panel, constants.TAB_STS)
 		self.notebook.AddPage(self.sfx_panel, constants.TAB_SFX)
 		self.notebook.AddPage(self.voice_design_panel, constants.TAB_VOICE_DESIGN)
 		self.Bind(wx.EVT_CLOSE, self._on_close)

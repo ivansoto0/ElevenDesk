@@ -15,6 +15,12 @@ MODEL_IDS = (
 	MODEL_MULTILINGUAL_V2,
 	MODEL_V3,
 )
+MODEL_STS_MULTILINGUAL_V2 = "eleven_multilingual_sts_v2"
+MODEL_STS_ENGLISH_V2 = "eleven_english_sts_v2"
+MODEL_STS_IDS = (
+	MODEL_STS_MULTILINGUAL_V2,
+	MODEL_STS_ENGLISH_V2,
+)
 
 OUTPUT_MP3_44100_128 = "mp3_44100_128"
 OUTPUT_MP3_44100_192 = "mp3_44100_192"
@@ -69,6 +75,7 @@ FILE_MODE_TEXT_WRITE = "w"
 
 TAB_TTS = "Text to Speech"
 TAB_STT = "Speech to Text"
+TAB_STS = "Speech to Speech"
 TAB_SFX = "Sound Effects"
 TAB_VOICE_DESIGN = "Voice Design"
 LABEL_VOICE = "Voice"
@@ -96,6 +103,11 @@ NAME_TRANSCRIBE_SELECTED_AUDIO = "Transcribe selected audio file"
 NAME_TRANSCRIPT_OUTPUT = "Transcript output, read only"
 NAME_COPY_TRANSCRIPT = "Copy transcript to clipboard"
 NAME_SAVE_TRANSCRIPT = "Save transcript to a text file"
+NAME_OPEN_STS_AUDIO = "Open audio file for voice conversion"
+NAME_SELECTED_STS_FILE = "Selected audio file for conversion, read only"
+NAME_CONVERT_STS = "Convert audio with selected voice"
+NAME_PLAY_STS_AUDIO = "Play converted audio"
+NAME_SAVE_STS_AUDIO = "Save converted audio"
 SLIDER_ACCESSIBLE_NAME_TEMPLATE = "{0}, {1} percent"
 SPEED_ACCESSIBLE_NAME_TEMPLATE = "{0}, {1:.2f} times normal speed"
 LABEL_PLAY = "Play"
@@ -136,6 +148,7 @@ LABEL_BROWSE = "Browse"
 LABEL_CANCEL = "Cancel"
 LABEL_CLOSE = "Close"
 LABEL_AUDIO_FILES = "Audio files"
+LABEL_CONVERT = "Convert"
 
 MENU_FILE = "&File"
 MENU_TOOLS = "&Tools"
@@ -184,6 +197,8 @@ COLUMN_CHANNELS = "Channels"
 COLUMN_SIZE = "Size"
 COLUMN_PATH = "Path"
 
+STATUS_CONVERTING = "Converting audio..."
+STATUS_CONVERTED = "Audio converted."
 STATUS_READY = "Ready"
 STATUS_LOADING_VOICES = "Loading voices..."
 STATUS_GENERATING = "Generating audio..."
@@ -274,6 +289,7 @@ AUDIO_FILE_EXTENSIONS = (
 	".wma",
 )
 
+API_ATTR_SPEECH_TO_SPEECH = "speech_to_speech"
 API_ATTR_VOICES = "voices"
 API_ATTR_MODELS = "models"
 API_ATTR_GET_ALL = "get_all"
