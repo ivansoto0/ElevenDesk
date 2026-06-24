@@ -1,7 +1,9 @@
 import atexit
 import io
 import os
+import platform
 import struct
+import tempfile
 import threading
 import time
 import wave
@@ -103,13 +105,29 @@ def _prepare_audio(audio_bytes, output_format):
 	raise ValueError(constants.ERROR_UNSUPPORTED_AUDIO)
 
 
+def _create_stream(data, output_format):
+	# sound_lib FileStream(mem=True) crashes on macOS: it unconditionally calls
+	# file.encode() on the bytes argument, treating it as a path string.
+	# Write to a temp file instead and return the path for later cleanup.
+	if platform.system() == "Darwin":
+		suffix = constants.EXTENSION_MP3 if output_format.startswith(constants.OUTPUT_MP3_PREFIX) else constants.EXTENSION_WAV
+		fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+		try:
+			os.write(fd, data)
+		finally:
+			os.close(fd)
+		return FileStream(file=tmp_path), tmp_path
+	return FileStream(mem=True, file=data, length=len(data)), None
+
+
 def play_audio(audio_bytes, output_format, on_finished=None):
 	def worker():
 		global _current_stream
+		tmp_path = None
 		try:
 			data = _prepare_audio(audio_bytes, output_format)
 			_get_output()
-			stream = FileStream(mem=True, file=data, length=len(data))
+			stream, tmp_path = _create_stream(data, output_format)
 		except Exception:
 			if on_finished is not None:
 				on_finished()
@@ -136,6 +154,11 @@ def play_audio(audio_bytes, output_format, on_finished=None):
 			stream.free()
 		except Exception:
 			pass
+		if tmp_path is not None:
+			try:
+				os.unlink(tmp_path)
+			except OSError:
+				pass
 		if on_finished is not None:
 			on_finished()
 
