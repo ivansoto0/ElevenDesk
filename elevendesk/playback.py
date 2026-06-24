@@ -103,7 +103,7 @@ def _prepare_audio(audio_bytes, output_format):
 	raise ValueError(constants.ERROR_UNSUPPORTED_AUDIO)
 
 
-def play_audio(audio_bytes, output_format):
+def play_audio(audio_bytes, output_format, on_finished=None):
 	def worker():
 		global _current_stream
 		try:
@@ -111,6 +111,8 @@ def play_audio(audio_bytes, output_format):
 			_get_output()
 			stream = FileStream(mem=True, file=data, length=len(data))
 		except Exception:
+			if on_finished is not None:
+				on_finished()
 			return
 		with _lock:
 			old = _current_stream
@@ -122,8 +124,11 @@ def play_audio(audio_bytes, output_format):
 			except Exception:
 				pass
 		stream.play()
-		while stream.is_playing:
-			time.sleep(constants.PLAYBACK_POLL_SECONDS)
+		try:
+			while stream.is_playing or stream.is_paused:
+				time.sleep(constants.PLAYBACK_POLL_SECONDS)
+		except Exception:
+			pass
 		with _lock:
 			if _current_stream is stream:
 				_current_stream = None
@@ -131,10 +136,40 @@ def play_audio(audio_bytes, output_format):
 			stream.free()
 		except Exception:
 			pass
+		if on_finished is not None:
+			on_finished()
 
 	thread = threading.Thread(target=worker, daemon=constants.THREAD_DAEMON)
 	thread.start()
 	return thread
+
+
+def pause_audio():
+	with _lock:
+		stream = _current_stream
+		if stream is None:
+			return False
+		try:
+			if not stream.is_playing:
+				return False
+			stream.pause()
+		except Exception:
+			return False
+	return True
+
+
+def resume_audio():
+	with _lock:
+		stream = _current_stream
+		if stream is None:
+			return False
+		try:
+			if not stream.is_paused:
+				return False
+			stream.play()
+		except Exception:
+			return False
+	return True
 
 
 def get_audio_file_metadata(file_path):

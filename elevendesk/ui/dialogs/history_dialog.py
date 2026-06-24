@@ -11,6 +11,10 @@ class HistoryDialog(wx.Dialog):
 	def __init__(self, parent):
 		wx.Dialog.__init__(self, parent, title=constants.TITLE_HISTORY, size=constants.DIALOG_SIZE)
 		self.history_items = []
+		self.playback_item_id = None
+		self.playback_is_paused = None
+		self.playback_request_id = 0
+		self.audio_cache = {}
 		self.history_list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL, name=constants.TITLE_HISTORY)
 		for index, (column_header, column_width) in enumerate((
 			(constants.COLUMN_DATE, constants.COLUMN_WIDTH_DATE),
@@ -28,6 +32,8 @@ class HistoryDialog(wx.Dialog):
 		self.delete_button = wx.Button(self, label=constants.LABEL_DELETE, name=constants.LABEL_DELETE)
 		self.status_text = wx.StaticText(self, label=constants.STATUS_LOADING, name=constants.LABEL_STATUS)
 		self._layout_controls()
+		self.play_button.SetDefault()
+		self.history_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_play)
 		self.play_button.Bind(wx.EVT_BUTTON, self._on_play)
 		self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
 		self.delete_button.Bind(wx.EVT_BUTTON, self._on_delete)
@@ -77,17 +83,82 @@ class HistoryDialog(wx.Dialog):
 
 	def _on_play(self, event):
 		item = self._selected_item()
-		if item:
-			threading.Thread(target=self._play_worker, args=(item,), daemon=constants.THREAD_DAEMON).start()
-
-	def _play_worker(self, item):
-		try:
-			audio_bytes = api.get_history_audio(item[constants.KEY_HISTORY_ITEM_ID])
-		except api.ElevenDeskAPIError as error:
-			wx.CallAfter(self.status_text.SetLabel, str(error))
+		if not item:
 			return
-		playback.play_audio(audio_bytes, constants.OUTPUT_MP3_44100_128)
-		wx.CallAfter(self.status_text.SetLabel, constants.STATUS_PLAYING)
+		item_id = item[constants.KEY_HISTORY_ITEM_ID]
+		if item_id == self.playback_item_id:
+			if self.playback_is_paused is False:
+				if playback.pause_audio():
+					self._set_playback_state(is_paused=True)
+				return
+			if self.playback_is_paused is True:
+				if playback.resume_audio():
+					self._set_playback_state(is_paused=False)
+				return
+		self.playback_request_id += 1
+		request_id = self.playback_request_id
+		self.playback_item_id = item_id
+		self.playback_is_paused = None
+		playback.stop_audio()
+		self.play_button.Disable()
+		self.play_button.SetLabel(constants.LABEL_PLAY)
+		self.play_button.SetName(constants.LABEL_PLAY)
+		self.status_text.SetLabel(constants.STATUS_LOADING_AUDIO)
+		if item_id in self.audio_cache:
+			self._start_playback(request_id, item_id, self.audio_cache[item_id])
+			return
+		threading.Thread(
+			target=self._play_worker,
+			args=(request_id, item_id),
+			daemon=constants.THREAD_DAEMON,
+		).start()
+
+	def _play_worker(self, request_id, item_id):
+		try:
+			audio_bytes = api.get_history_audio(item_id)
+		except api.ElevenDeskAPIError as error:
+			wx.CallAfter(self._playback_failed, request_id, str(error))
+			return
+		wx.CallAfter(self._start_playback, request_id, item_id, audio_bytes)
+
+	def _start_playback(self, request_id, item_id, audio_bytes):
+		if request_id != self.playback_request_id:
+			return
+		self.audio_cache[item_id] = audio_bytes
+		playback.play_audio(
+			audio_bytes,
+			constants.OUTPUT_MP3_44100_128,
+			on_finished=lambda: wx.CallAfter(self._playback_finished, request_id),
+		)
+		self._set_playback_state(is_paused=False)
+
+	def _set_playback_state(self, is_paused):
+		self.playback_is_paused = is_paused
+		label = constants.LABEL_PLAY if is_paused else constants.LABEL_PAUSE
+		self.play_button.SetLabel(label)
+		self.play_button.SetName(label)
+		self.play_button.Enable()
+		self.status_text.SetLabel(constants.STATUS_PAUSED if is_paused else constants.STATUS_PLAYING)
+
+	def _playback_finished(self, request_id):
+		if request_id != self.playback_request_id:
+			return
+		self.playback_item_id = None
+		self.playback_is_paused = None
+		self.play_button.SetLabel(constants.LABEL_PLAY)
+		self.play_button.SetName(constants.LABEL_PLAY)
+		self.play_button.Enable()
+		self.status_text.SetLabel(constants.STATUS_READY)
+
+	def _playback_failed(self, request_id, message):
+		if request_id != self.playback_request_id:
+			return
+		self.playback_item_id = None
+		self.playback_is_paused = None
+		self.play_button.SetLabel(constants.LABEL_PLAY)
+		self.play_button.SetName(constants.LABEL_PLAY)
+		self.play_button.Enable()
+		self.status_text.SetLabel(message)
 
 	def _on_save(self, event):
 		item = self._selected_item()
