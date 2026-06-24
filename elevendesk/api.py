@@ -256,7 +256,7 @@ def clone_voice(name, description, file_paths):
 def get_history():
 	client = get_client()
 	response = _call_sdk(
-		_get_sdk_method(client, constants.API_ATTR_HISTORY, constants.API_ATTR_GET_ALL),
+		_get_sdk_method(client, constants.API_ATTR_HISTORY, constants.API_ATTR_LIST),
 		{constants.API_KW_PAGE_SIZE: constants.HISTORY_PAGE_SIZE},
 	)
 	history_items = []
