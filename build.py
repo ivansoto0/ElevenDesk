@@ -181,11 +181,24 @@ def remove_x86_dylibs_from_app(app):
 	"""Remove 32-bit x86 dylibs bundled by PyInstaller.
 
 	These fail notarization (pre-10.9 SDK) and can't run on macOS 10.15+.
+	PyInstaller mirrors binaries from Frameworks into Resources as symlinks, so
+	both copies must be removed; otherwise dangling symlinks cause Gatekeeper to
+	reject the bundle with "invalid destination for symbolic link".
 	"""
-	x86_dir = app / "Contents" / "Frameworks" / "sound_lib" / "lib" / "x86"
-	if x86_dir.exists():
-		shutil.rmtree(x86_dir)
-		print("Removed sound_lib/lib/x86 from bundle (32-bit, pre-10.9 SDK)")
+	for base in ("Frameworks", "Resources"):
+		x86_dir = app / "Contents" / base / "sound_lib" / "lib" / "x86"
+		if x86_dir.exists():
+			shutil.rmtree(x86_dir)
+			print(f"Removed {base}/sound_lib/lib/x86 from bundle (32-bit, pre-10.9 SDK)")
+
+	# PyInstaller also creates top-level libbass.dylib symlinks in Resources and
+	# Frameworks that point into the now-deleted x86 directory.  Remove them so
+	# no dangling symlinks remain in the bundle.
+	for base in ("Frameworks", "Resources"):
+		stub = app / "Contents" / base / "libbass.dylib"
+		if stub.is_symlink() and not stub.exists():
+			stub.unlink()
+			print(f"Removed dangling {base}/libbass.dylib symlink")
 
 
 def build_macos():
