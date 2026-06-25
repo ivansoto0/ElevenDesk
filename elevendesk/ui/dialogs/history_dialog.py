@@ -1,6 +1,7 @@
 import threading
 
 import wx
+from smart_list import Column, SmartList
 
 from elevendesk import api
 from elevendesk import constants
@@ -10,20 +11,19 @@ from elevendesk import playback
 class HistoryDialog(wx.Dialog):
 	def __init__(self, parent):
 		wx.Dialog.__init__(self, parent, title=constants.TITLE_HISTORY, size=constants.DIALOG_SIZE)
-		self.history_items = []
 		self.playback_item_id = None
 		self.playback_is_paused = None
 		self.playback_request_id = 0
 		self.audio_cache = {}
-		self.history_list = wx.ListCtrl(self, style=wx.LC_REPORT | wx.LC_SINGLE_SEL, name=constants.TITLE_HISTORY)
-		for index, (column_header, column_width) in enumerate((
-			(constants.COLUMN_DATE, constants.COLUMN_WIDTH_DATE),
-			(constants.COLUMN_TYPE, constants.COLUMN_WIDTH_TYPE),
-			(constants.COLUMN_VOICE, constants.COLUMN_WIDTH_VOICE),
-			(constants.COLUMN_MODEL, constants.COLUMN_WIDTH_MODEL),
-			(constants.COLUMN_PREVIEW, constants.COLUMN_WIDTH_PREVIEW),
-		)):
-			self.history_list.InsertColumn(index, column_header, width=column_width)
+		self.history_list = SmartList(parent=self, name=constants.TITLE_HISTORY)
+		self.history_list.set_columns([
+			Column(constants.COLUMN_DATE, constants.COLUMN_WIDTH_DATE, constants.KEY_DATE),
+			Column(constants.COLUMN_TYPE, constants.COLUMN_WIDTH_TYPE, constants.KEY_TYPE),
+			Column(constants.COLUMN_VOICE, constants.COLUMN_WIDTH_VOICE, constants.KEY_VOICE),
+			Column(constants.COLUMN_MODEL, constants.COLUMN_WIDTH_MODEL, constants.KEY_MODEL),
+			Column(constants.COLUMN_PREVIEW, constants.COLUMN_WIDTH_PREVIEW,
+				lambda item: item[constants.KEY_PREVIEW][:constants.PREVIEW_MAX_LENGTH]),
+		])
 		self.play_label = wx.StaticText(self, label=constants.LABEL_PLAY)
 		self.play_button = wx.Button(self, label=constants.LABEL_PLAY, name=constants.LABEL_PLAY)
 		self.save_label = wx.StaticText(self, label=constants.LABEL_SAVE)
@@ -33,7 +33,6 @@ class HistoryDialog(wx.Dialog):
 		self.status_text = wx.StaticText(self, label=constants.STATUS_LOADING, name=constants.LABEL_STATUS)
 		self._layout_controls()
 		self.play_button.SetDefault()
-		self.history_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_play)
 		self.play_button.Bind(wx.EVT_BUTTON, self._on_play)
 		self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
 		self.delete_button.Bind(wx.EVT_BUTTON, self._on_delete)
@@ -41,7 +40,7 @@ class HistoryDialog(wx.Dialog):
 
 	def _layout_controls(self):
 		main_sizer = wx.BoxSizer(wx.VERTICAL)
-		main_sizer.Add(self.history_list, constants.SIZER_PROPORTION_EXPAND, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
+		main_sizer.Add(self.history_list.control.control, constants.SIZER_PROPORTION_EXPAND, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
 		button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 		for label, button in (
 			(self.play_label, self.play_button),
@@ -63,23 +62,15 @@ class HistoryDialog(wx.Dialog):
 		wx.CallAfter(self._set_items, items)
 
 	def _set_items(self, items):
-		self.history_items = items
-		self.history_list.DeleteAllItems()
-		for item in items:
-			preview = item[constants.KEY_PREVIEW][:constants.PREVIEW_MAX_LENGTH]
-			row = self.history_list.InsertItem(self.history_list.GetItemCount(), item[constants.KEY_DATE])
-			self.history_list.SetItem(row, constants.COLUMN_INDEX_TYPE, item[constants.KEY_TYPE])
-			self.history_list.SetItem(row, constants.COLUMN_INDEX_VOICE, item[constants.KEY_VOICE])
-			self.history_list.SetItem(row, constants.COLUMN_INDEX_MODEL, item[constants.KEY_MODEL])
-			self.history_list.SetItem(row, constants.COLUMN_INDEX_PREVIEW, preview)
+		self.history_list.clear()
+		self.history_list.add_items(items)
 		self.status_text.SetLabel(constants.STATUS_READY)
 
 	def _selected_item(self):
-		index = self.history_list.GetFirstSelected()
-		if index == wx.NOT_FOUND:
+		item = self.history_list.get_selected_item()
+		if item is None:
 			self.status_text.SetLabel(constants.ERROR_SELECTION_REQUIRED)
-			return None
-		return self.history_items[index]
+		return item
 
 	def _on_play(self, event):
 		item = self._selected_item()
@@ -192,5 +183,4 @@ class HistoryDialog(wx.Dialog):
 		wx.CallAfter(self._remove_item, item)
 
 	def _remove_item(self, item):
-		self.history_items.remove(item)
-		self._set_items(self.history_items)
+		self.history_list.delete_item(item)

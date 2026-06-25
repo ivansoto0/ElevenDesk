@@ -1,4 +1,6 @@
 *
+*.p8
+build.config
 
 !.gitignore
 !README.md

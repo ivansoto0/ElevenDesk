@@ -2,6 +2,7 @@ import os
 import threading
 
 import wx
+from smart_list import Column, SmartList
 from sound_lib.main import BassError
 
 from elevendesk import api
@@ -19,21 +20,20 @@ class CloneVoiceDialog(wx.Dialog):
 		self.description_label = wx.StaticText(self, label=constants.COLUMN_DESCRIPTION)
 		self.description_input = wx.TextCtrl(self, name=constants.COLUMN_DESCRIPTION)
 		self.files_label = wx.StaticText(self, label=constants.LABEL_AUDIO_FILES)
-		self.files_list = wx.ListCtrl(
-			self,
-			style=wx.LC_REPORT | wx.LC_SINGLE_SEL,
-			name=constants.LABEL_AUDIO_FILES,
-		)
-		for column_index, column_header, column_width in (
-			(constants.COLUMN_INDEX_FILE, constants.COLUMN_FILE, constants.COLUMN_WIDTH_FILE),
-			(constants.COLUMN_INDEX_DURATION, constants.COLUMN_DURATION, constants.COLUMN_WIDTH_DURATION),
-			(constants.COLUMN_INDEX_FORMAT, constants.COLUMN_FORMAT, constants.COLUMN_WIDTH_FORMAT),
-			(constants.COLUMN_INDEX_SAMPLE_RATE, constants.COLUMN_SAMPLE_RATE, constants.COLUMN_WIDTH_SAMPLE_RATE),
-			(constants.COLUMN_INDEX_CHANNELS, constants.COLUMN_CHANNELS, constants.COLUMN_WIDTH_CHANNELS),
-			(constants.COLUMN_INDEX_SIZE, constants.COLUMN_SIZE, constants.COLUMN_WIDTH_SIZE),
-			(constants.COLUMN_INDEX_PATH, constants.COLUMN_PATH, constants.COLUMN_WIDTH_PATH),
-		):
-			self.files_list.InsertColumn(column_index, column_header, width=column_width)
+		self.files_list = SmartList(parent=self, name=constants.LABEL_AUDIO_FILES)
+		self.files_list.set_columns([
+			Column(constants.COLUMN_FILE, constants.COLUMN_WIDTH_FILE, constants.KEY_FILE_NAME),
+			Column(constants.COLUMN_DURATION, constants.COLUMN_WIDTH_DURATION,
+				lambda m: constants.FILE_DURATION_TEMPLATE.format(m[constants.KEY_FILE_DURATION])),
+			Column(constants.COLUMN_FORMAT, constants.COLUMN_WIDTH_FORMAT, constants.KEY_FILE_FORMAT),
+			Column(constants.COLUMN_SAMPLE_RATE, constants.COLUMN_WIDTH_SAMPLE_RATE,
+				lambda m: constants.FILE_SAMPLE_RATE_TEMPLATE.format(m[constants.KEY_FILE_SAMPLE_RATE])),
+			Column(constants.COLUMN_CHANNELS, constants.COLUMN_WIDTH_CHANNELS,
+				lambda m: str(m[constants.KEY_FILE_CHANNELS])),
+			Column(constants.COLUMN_SIZE, constants.COLUMN_WIDTH_SIZE,
+				lambda m: constants.FILE_SIZE_TEMPLATE.format(m[constants.KEY_FILE_SIZE] / constants.BYTES_PER_MEGABYTE)),
+			Column(constants.COLUMN_PATH, constants.COLUMN_WIDTH_PATH, constants.KEY_FILE_PATH),
+		])
 		self.add_label = wx.StaticText(self, label=constants.LABEL_ADD_FILE)
 		self.add_button = wx.Button(self, label=constants.LABEL_ADD_FILE, name=constants.LABEL_ADD_FILE)
 		self.add_directory_label = wx.StaticText(self, label=constants.LABEL_ADD_DIRECTORY)
@@ -77,11 +77,11 @@ class CloneVoiceDialog(wx.Dialog):
 		for label, control in (
 			(self.name_label, self.name_input),
 			(self.description_label, self.description_input),
-			(self.files_label, self.files_list),
 		):
 			main_sizer.Add(label, constants.SIZER_PROPORTION_NONE, wx.BOTTOM, constants.CONTROL_GAP)
-			proportion = constants.SIZER_PROPORTION_EXPAND if control is self.files_list else constants.SIZER_PROPORTION_NONE
-			main_sizer.Add(control, proportion, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
+			main_sizer.Add(control, constants.SIZER_PROPORTION_NONE, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
+		main_sizer.Add(self.files_label, constants.SIZER_PROPORTION_NONE, wx.BOTTOM, constants.CONTROL_GAP)
+		main_sizer.Add(self.files_list.control.control, constants.SIZER_PROPORTION_EXPAND, wx.EXPAND | wx.BOTTOM, constants.SECTION_GAP)
 		button_sizer = wx.BoxSizer(wx.HORIZONTAL)
 		for label, button in (
 			(self.add_label, self.add_button),
@@ -99,9 +99,10 @@ class CloneVoiceDialog(wx.Dialog):
 		self.SetSizer(main_sizer)
 
 	def _set_tab_order(self):
+		files_widget = self.files_list.control.control
 		self.description_input.MoveAfterInTabOrder(self.name_input)
-		self.files_list.MoveAfterInTabOrder(self.description_input)
-		self.add_button.MoveAfterInTabOrder(self.files_list)
+		files_widget.MoveAfterInTabOrder(self.description_input)
+		self.add_button.MoveAfterInTabOrder(files_widget)
 		self.add_directory_button.MoveAfterInTabOrder(self.add_button)
 		self.remove_button.MoveAfterInTabOrder(self.add_directory_button)
 		self.rights_checkbox.MoveAfterInTabOrder(self.remove_button)
@@ -155,7 +156,7 @@ class CloneVoiceDialog(wx.Dialog):
 			metadata[constants.KEY_FILE_PATH] = normalized_path
 			self.audio_files.append(metadata)
 			existing_paths.add(normalized_path)
-			self._append_audio_file(metadata)
+			self.files_list.add_item(metadata)
 			added_count += constants.INDEX_STEP
 		if limit_count:
 			status_message = constants.STATUS_AUDIO_FILES_LIMIT_TEMPLATE.format(
@@ -172,41 +173,11 @@ class CloneVoiceDialog(wx.Dialog):
 		self.status_text.SetLabel(status_message)
 		self._update_clone_button()
 
-	def _append_audio_file(self, metadata):
-		row = self.files_list.InsertItem(
-			self.files_list.GetItemCount(),
-			metadata[constants.KEY_FILE_NAME],
-		)
-		self.files_list.SetItem(
-			row,
-			constants.COLUMN_INDEX_DURATION,
-			constants.FILE_DURATION_TEMPLATE.format(metadata[constants.KEY_FILE_DURATION]),
-		)
-		self.files_list.SetItem(row, constants.COLUMN_INDEX_FORMAT, metadata[constants.KEY_FILE_FORMAT])
-		self.files_list.SetItem(
-			row,
-			constants.COLUMN_INDEX_SAMPLE_RATE,
-			constants.FILE_SAMPLE_RATE_TEMPLATE.format(metadata[constants.KEY_FILE_SAMPLE_RATE]),
-		)
-		self.files_list.SetItem(
-			row,
-			constants.COLUMN_INDEX_CHANNELS,
-			str(metadata[constants.KEY_FILE_CHANNELS]),
-		)
-		self.files_list.SetItem(
-			row,
-			constants.COLUMN_INDEX_SIZE,
-			constants.FILE_SIZE_TEMPLATE.format(
-				metadata[constants.KEY_FILE_SIZE] / constants.BYTES_PER_MEGABYTE
-			),
-		)
-		self.files_list.SetItem(row, constants.COLUMN_INDEX_PATH, metadata[constants.KEY_FILE_PATH])
-
 	def _on_remove(self, event):
-		selection = self.files_list.GetFirstSelected()
-		if selection != wx.NOT_FOUND:
-			del self.audio_files[selection]
-			self.files_list.DeleteItem(selection)
+		item = self.files_list.get_selected_item()
+		if item is not None:
+			self.audio_files.remove(item)
+			self.files_list.delete_item(item)
 			self._update_clone_button()
 
 	def _on_rights_changed(self, event):
@@ -249,7 +220,7 @@ class CloneVoiceDialog(wx.Dialog):
 		for control in (
 			self.name_input,
 			self.description_input,
-			self.files_list,
+			self.files_list.control.control,
 			self.add_button,
 			self.add_directory_button,
 			self.remove_button,
