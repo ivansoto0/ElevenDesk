@@ -4,6 +4,7 @@
 !README.md
 !pyproject.toml
 !uv.lock
+!build.py
 !elevendesk/
 !elevendesk/**/
 !elevendesk/**/*.py
